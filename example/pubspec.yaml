@@ -1,0 +1,16 @@
+name: noto_3d_emoji_example
+description: Example app for noto_3d_emoji
+publish_to: none
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  noto_3d_emoji:
+    path: ../
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

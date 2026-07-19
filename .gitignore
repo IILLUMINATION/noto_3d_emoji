@@ -1,0 +1,33 @@
+# Flutter
+*.iml
+.idea/
+.gradle/
+build/
+
+# Dart
+.dart_tool/
+.pub/
+.packages
+.pub-preload-cache/
+
+# Android
+local.properties
+*.apk
+*.aab
+
+# iOS
+*.xcworkspace
+Pods/
+Podfile.lock
+
+# Linux
+linux/flutter/ephemeral/
+
+# macOS
+macos/flutter/ephemeral/
+
+# Windows
+windows/flutter/ephemeral/
+
+# Web
+web/.build/
