@@ -92,25 +92,53 @@ class _EmojiScreenState extends State<EmojiScreen>
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Scaffold(
-      body: _buildBody(cs),
-    );
+    return Scaffold(body: _buildBody(cs));
   }
 
   Widget _buildBody(ColorScheme cs) {
-    if (_loading) {
-      return _buildLoadingScreen(cs);
-    }
+    if (_loading) return _LoadingScreen(cs: cs, progress: _progress);
     if (_error != null) {
-      return _buildErrorScreen(cs);
+      return _ErrorScreen(cs: cs, error: _error!, onRetry: () async {
+        await NotoEmoji.clearCache();
+        _loadFont();
+      });
     }
-    if (!_ready) {
-      return const Center(child: Text('Not initialized'));
-    }
-    return _buildShowcase(cs);
+    if (!_ready) return const Center(child: Text('Not initialized'));
+    return FadeTransition(
+      opacity: _fadeIn,
+      child: const _Showcase(),
+    );
   }
+}
 
-  Widget _buildLoadingScreen(ColorScheme cs) {
+// ─── RESPONSIVE HELPERS ──────────────────────────────────────────────────────
+
+class _Responsive extends StatelessWidget {
+  final Widget narrow;
+  final Widget? medium;
+  final Widget wide;
+  const _Responsive({required this.narrow, this.medium, required this.wide});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (_, bc) {
+      final w = bc.maxWidth;
+      if (w > 900) return wide;
+      if (w > 600) return medium ?? wide;
+      return narrow;
+    });
+  }
+}
+
+// ─── LOADING ─────────────────────────────────────────────────────────────────
+
+class _LoadingScreen extends StatelessWidget {
+  final ColorScheme cs;
+  final double progress;
+  const _LoadingScreen({required this.cs, required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 48),
@@ -135,14 +163,14 @@ class _EmojiScreenState extends State<EmojiScreen>
                     width: 160,
                     height: 160,
                     child: CircularProgressIndicator(
-                      value: _progress > 0 ? _progress : null,
+                      value: progress > 0 ? progress : null,
                       strokeWidth: 6,
                       strokeCap: StrokeCap.round,
                     ),
                   ),
                   Text(
-                    _progress > 0
-                        ? '${(_progress * 100).toStringAsFixed(0)}%'
+                    progress > 0
+                        ? '${(progress * 100).toStringAsFixed(0)}%'
                         : '...',
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                           fontWeight: FontWeight.bold,
@@ -153,24 +181,36 @@ class _EmojiScreenState extends State<EmojiScreen>
               ),
             ),
             const SizedBox(height: 24),
-            Text(
-              'Downloading 142 MB font...',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
+            const Text('Downloading 142 MB font...'),
             const SizedBox(height: 4),
             Text(
               'One-time download, cached forever',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: cs.onSurfaceVariant),
             ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildErrorScreen(ColorScheme cs) {
+// ─── ERROR ───────────────────────────────────────────────────────────────────
+
+class _ErrorScreen extends StatelessWidget {
+  final ColorScheme cs;
+  final String error;
+  final VoidCallback onRetry;
+  const _ErrorScreen({
+    required this.cs,
+    required this.error,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -179,24 +219,20 @@ class _EmojiScreenState extends State<EmojiScreen>
           children: [
             Icon(Icons.error_outline_rounded, size: 72, color: cs.error),
             const SizedBox(height: 16),
-            Text(
-              'Failed to load font',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Failed to load font',
+                style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(
-              _error!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
+              error,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: cs.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: () async {
-                await NotoEmoji.clearCache();
-                _loadFont();
-              },
+              onPressed: onRetry,
               icon: const Icon(Icons.refresh),
               label: const Text('Clear cache & retry'),
             ),
@@ -205,45 +241,91 @@ class _EmojiScreenState extends State<EmojiScreen>
       ),
     );
   }
+}
 
-  Widget _buildShowcase(ColorScheme cs) {
-    return FadeTransition(
-      opacity: _fadeIn,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Noto 3D Emoji'),
-          centerTitle: true,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.refresh_rounded),
-              tooltip: 'Reload font',
-              onPressed: () async {
-                await NotoEmoji.clearCache();
-                setState(() {
-                  _ready = false;
-                  _progress = 0;
-                });
-                _loadFont();
-              },
-            ),
-          ],
-        ),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+// ─── SHOWCASE ────────────────────────────────────────────────────────────────
+
+class _Showcase extends StatelessWidget {
+  const _Showcase();
+
+  @override
+  Widget build(BuildContext context) {
+    return _Responsive(
+      narrow: _Body(columns: 4, emojiSize: 32.0),
+      medium: _Body(columns: 6, emojiSize: 36.0),
+      wide: _Body(columns: 8, emojiSize: 40.0),
+    );
+  }
+}
+
+class _Body extends StatelessWidget {
+  final int columns;
+  final double emojiSize;
+  const _Body({required this.columns, required this.emojiSize});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Noto 3D Emoji'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Reload font',
+            onPressed: () async {
+              await NotoEmoji.clearCache();
+              // Trigger rebuild through parent — in a real app you'd use
+              // a callback. For demo simplicity we restart the app.
+              (context.findAncestorStateOfType<_EmojiScreenState>()
+                      as dynamic)
+                  ?.setState(() {});
+            },
+          ),
+        ],
+      ),
+      body: LayoutBuilder(builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        return ListView(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            8,
+            16,
+            32,
+          ),
           children: [
-            _HeroSection(cs: cs),
+            _PageWrapper(
+              child: _HeroSection(emojiRowSize: w > 600 ? 56 : 48),
+            ),
             const SizedBox(height: 16),
-            _InlineDemo(cs: cs),
+            _PageWrapper(child: _InlineDemo(emojiSize: emojiSize)),
             const SizedBox(height: 16),
-            _GiantEmojiGrid(cs: cs),
+            _PageWrapper(
+              child: _GiantEmojiGrid(columns: columns),
+            ),
             const SizedBox(height: 16),
-            ..._buildCategorySections(cs),
+            ..._buildCategorySections(columns, emojiSize),
             const SizedBox(height: 16),
-            _SampleTexts(cs: cs),
+            _PageWrapper(child: _SampleTexts()),
             const SizedBox(height: 16),
-            _UsageApi(cs: cs),
+            _PageWrapper(child: _UsageApi()),
           ],
-        ),
+        );
+      }),
+    );
+  }
+}
+
+class _PageWrapper extends StatelessWidget {
+  final Widget child;
+  const _PageWrapper({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1000),
+        child: child,
       ),
     );
   }
@@ -252,11 +334,12 @@ class _EmojiScreenState extends State<EmojiScreen>
 // ─── HERO ────────────────────────────────────────────────────────────────────
 
 class _HeroSection extends StatelessWidget {
-  final ColorScheme cs;
-  const _HeroSection({required this.cs});
+  final double emojiRowSize;
+  const _HeroSection({required this.emojiRowSize});
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Card(
       color: cs.primaryContainer.withValues(alpha: 0.4),
       child: Padding(
@@ -280,13 +363,15 @@ class _HeroSection extends StatelessWidget {
             const SizedBox(height: 20),
             EmojiText(
               '\u{1F44B}\u{1F3FB} \u{1F308} \u{2728} \u{1F31F} \u{1F389} \u{1F3C6}',
-              style: TextStyle(fontSize: 48, color: cs.onPrimaryContainer),
+              style:
+                  TextStyle(fontSize: emojiRowSize, color: cs.onPrimaryContainer),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             EmojiText(
               '\u{1F525} \u{1F680} \u{2764}\u{FE0F} \u{1F60D} \u{1F4AF} \u{1F3B5}',
-              style: TextStyle(fontSize: 36, color: cs.onPrimaryContainer),
+              style:
+                  TextStyle(fontSize: emojiRowSize - 12, color: cs.onPrimaryContainer),
               textAlign: TextAlign.center,
             ),
           ],
@@ -299,8 +384,8 @@ class _HeroSection extends StatelessWidget {
 // ─── INLINE TEXT DEMO ────────────────────────────────────────────────────────
 
 class _InlineDemo extends StatelessWidget {
-  final ColorScheme cs;
-  const _InlineDemo({required this.cs});
+  final double emojiSize;
+  const _InlineDemo({required this.emojiSize});
 
   @override
   Widget build(BuildContext context) {
@@ -314,20 +399,19 @@ class _InlineDemo extends StatelessWidget {
             _SectionTitle('Inline with regular text'),
             const SizedBox(height: 8),
             EmojiText(
-              'Notifications: You have 3 new messages \u{1F4E8} and 2 friend requests \u{1F91D}. '
-              'Check your inbox \u{1F4EC} for details.',
+              'Notifications: You have 3 new messages \u{1F4E8} '
+              'and 2 friend requests \u{1F91D}. Check your inbox \u{1F4EC}.',
               style: body,
             ),
             const Divider(height: 24),
             EmojiText(
-              'Weather: \u{2600}\u{FE0F} 24\u{00B0}C with a chance of \u{26C8}\u{FE0F} '
-              'in the evening. Don\'t forget your \u{2602}\u{FE0F}!',
+              'Weather: \u{2600}\u{FE0F} 24\u{00B0}C with a chance of '
+              '\u{26C8}\u{FE0F} in the evening.',
               style: body,
             ),
             const Divider(height: 24),
             EmojiText(
-              'Leaderboard \u{1F3C6}: 1st \u{1F947} 2nd \u{1F948} 3rd \u{1F949} '
-              '\u{2022} Your rank: #42 \u{1F4AA}\u{1F3FB}',
+              'Leaderboard \u{1F3C6}: 1st \u{1F947} 2nd \u{1F948} 3rd \u{1F949}',
               style: body,
             ),
           ],
@@ -340,8 +424,8 @@ class _InlineDemo extends StatelessWidget {
 // ─── GIANT EMOJI GRID ────────────────────────────────────────────────────────
 
 class _GiantEmojiGrid extends StatelessWidget {
-  final ColorScheme cs;
-  const _GiantEmojiGrid({required this.cs});
+  final int columns;
+  const _GiantEmojiGrid({required this.columns});
 
   static const _items = <(String, String)>[
     ('Grinning', '\u{1F600}'),
@@ -356,10 +440,15 @@ class _GiantEmojiGrid extends StatelessWidget {
     ('Unicorn', '\u{1F984}'),
     ('Dragon', '\u{1F409}'),
     ('Pizza', '\u{1F355}'),
+    ('Cat', '\u{1F431}'),
+    ('Dog', '\u{1F436}'),
+    ('Heart', '\u{2764}\u{FE0F}'),
+    ('Star', '\u{2B50}'),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -369,7 +458,7 @@ class _GiantEmojiGrid extends StatelessWidget {
             _SectionTitle('Large format'),
             const SizedBox(height: 12),
             GridView.count(
-              crossAxisCount: 4,
+              crossAxisCount: columns,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: 8,
@@ -384,16 +473,14 @@ class _GiantEmojiGrid extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      EmojiText(
-                        e.$2,
-                        style: const TextStyle(fontSize: 42),
-                      ),
+                      EmojiText(e.$2, style: const TextStyle(fontSize: 42)),
                       const SizedBox(height: 4),
                       Text(
                         e.$1,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: cs.onSurfaceVariant,
-                            ),
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelSmall
+                            ?.copyWith(color: cs.onSurfaceVariant),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -410,40 +497,27 @@ class _GiantEmojiGrid extends StatelessWidget {
 
 // ─── CATEGORIES ──────────────────────────────────────────────────────────────
 
-List<Widget> _buildCategorySections(ColorScheme cs) {
+List<Widget> _buildCategorySections(int columns, double emojiSize) {
   return _categories.map((cat) {
-    final chunks = _splitIntoChunks(cat.$2, 8);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _SectionTitle(cat.$1),
-            const SizedBox(height: 8),
-            ...chunks.map((chunk) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: EmojiText(
-                    chunk,
-                    style: const TextStyle(fontSize: 32),
-                  ),
-                )),
-          ],
+    return _PageWrapper(
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _SectionTitle(cat.$1),
+              const SizedBox(height: 8),
+              EmojiText(
+                cat.$2,
+                style: TextStyle(fontSize: emojiSize, height: 1.4),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }).toList();
-}
-
-List<String> _splitIntoChunks(String s, int n) {
-  final runes = s.runes.toList();
-  final chunks = <String>[];
-  for (int i = 0; i < runes.length; i += n) {
-    chunks.add(String.fromCharCodes(
-      runes.sublist(i, i + n > runes.length ? runes.length : i + n),
-    ));
-  }
-  return chunks;
 }
 
 const _categories = <(String, String)>[
@@ -458,8 +532,10 @@ const _categories = <(String, String)>[
       '\u{1F493}\u{1F49E}\u{1F495}\u{1F49F}\u{2763}\u{1F494}\u{1F49A}\u{1F499}'
       '\u{1F49C}\u{1F49B}\u{1F5A4}\u{1F90D}\u{1F90E}\u{1F90C}'),
   ('Gestures & People',
-      '\u{1F44B}\u{1F44B}\u{1F3FB}\u{1F44B}\u{1F3FC}\u{1F44B}\u{1F3FD}\u{1F44B}\u{1F3FE}\u{1F44B}\u{1F3FF}'
-      '\u{270C}\u{FE0F}\u{270C}\u{1F3FB}\u{270C}\u{1F3FC}\u{270C}\u{1F3FD}\u{270C}\u{1F3FE}\u{270C}\u{1F3FF}'
+      '\u{1F44B}\u{1F44B}\u{1F3FB}\u{1F44B}\u{1F3FC}\u{1F44B}\u{1F3FD}'
+      '\u{1F44B}\u{1F3FE}\u{1F44B}\u{1F3FF}'
+      '\u{270C}\u{FE0F}\u{270C}\u{1F3FB}\u{270C}\u{1F3FC}\u{270C}\u{1F3FD}'
+      '\u{270C}\u{1F3FE}\u{270C}\u{1F3FF}'
       '\u{1F44D}\u{1F44E}\u{270A}\u{1F44A}\u{1F44F}\u{1F64C}\u{1F918}\u{1F919}'
       '\u{1F590}\u{1F596}\u{1F91E}\u{1F91F}\u{1F90F}\u{1F91D}'
       '\u{1F3C3}\u{1F3C4}\u{1F3CA}\u{1F6B4}\u{1F6B5}\u{1F6B6}'),
@@ -511,11 +587,9 @@ const _categories = <(String, String)>[
 // ─── SAMPLE TEXTS ────────────────────────────────────────────────────────────
 
 class _SampleTexts extends StatelessWidget {
-  final ColorScheme cs;
-  const _SampleTexts({required this.cs});
-
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -524,27 +598,36 @@ class _SampleTexts extends StatelessWidget {
           children: [
             _SectionTitle('Sample use cases'),
             const SizedBox(height: 8),
-            _sampleRow(context, 'Rating:', '\u{2B50}\u{2B50}\u{2B50}\u{2B50}\u{2B50}'),
+            _sampleRow(context, cs, 'Rating:',
+                '\u{2B50}\u{2B50}\u{2B50}\u{2B50}\u{2B50}'),
             const Divider(height: 16),
-            _sampleRow(context, 'Status:', '\u{2705} Completed \u{26A0}\u{FE0F} Pending \u{274C} Failed'),
+            _sampleRow(
+                context,
+                cs,
+                'Status:',
+                '\u{2705} Completed  \u{26A0}\u{FE0F} Pending  \u{274C} Failed'),
             const Divider(height: 16),
-            _sampleRow(context, 'Reaction:', '\u{2764}\u{FE0F} 42 \u{1F44D} 18 \u{1F44E} 3 \u{1F602} 27'),
+            _sampleRow(context, cs, 'Reaction:',
+                '\u{2764}\u{FE0F} 42  \u{1F44D} 18  \u{1F44E} 3  \u{1F602} 27'),
             const Divider(height: 16),
-            _sampleRow(context, 'Stack:', 'Flutter \u{1F3AE} + Dart \u{1F426} = \u{2764}\u{FE0F}'),
+            _sampleRow(context, cs, 'Stack:',
+                'Flutter \u{1F3AE} + Dart \u{1F426} = \u{2764}\u{FE0F}'),
             const Divider(height: 16),
-            _sampleRow(context, 'Hero:', '\u{1F44B} Welcome to the party! \u{1F389} \u{1F37B}'),
+            _sampleRow(context, cs, 'Hero:',
+                '\u{1F44B} Welcome! \u{1F389} \u{1F37B}'),
           ],
         ),
       ),
     );
   }
 
-  Widget _sampleRow(BuildContext context, String label, String emojiText) {
+  Widget _sampleRow(
+      BuildContext context, ColorScheme cs, String label, String text) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 72,
+          width: 80,
           child: Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -553,7 +636,9 @@ class _SampleTexts extends StatelessWidget {
                 ),
           ),
         ),
-        Expanded(child: EmojiText(emojiText, style: Theme.of(context).textTheme.bodyLarge)),
+        Expanded(
+          child: EmojiText(text, style: Theme.of(context).textTheme.bodyLarge),
+        ),
       ],
     );
   }
@@ -562,11 +647,9 @@ class _SampleTexts extends StatelessWidget {
 // ─── USAGE / API ─────────────────────────────────────────────────────────────
 
 class _UsageApi extends StatelessWidget {
-  final ColorScheme cs;
-  const _UsageApi({required this.cs});
-
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -575,10 +658,8 @@ class _UsageApi extends StatelessWidget {
           children: [
             _SectionTitle('How to use'),
             const SizedBox(height: 8),
-            Text(
-              'Add to your app:',
-              style: Theme.of(context).textTheme.labelLarge,
-            ),
+            Text('Add to your app:',
+                style: Theme.of(context).textTheme.labelLarge),
             const SizedBox(height: 4),
             Container(
               width: double.infinity,
@@ -590,7 +671,7 @@ class _UsageApi extends StatelessWidget {
               child: Text(
                 "import 'package:noto_3d_emoji/noto_3d_emoji.dart';\n\n"
                 "await NotoEmoji.initialize(\n"
-                "  url: 'https://your-server.com/NotoColorEmoji.ttf',\n"
+                "  url: 'https://your-server.com/font.ttf',\n"
                 ');\n\n'
                 "EmojiText('Hello \u{1F30D}!')  // auto-magic",
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -616,9 +697,10 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+      style: Theme.of(context)
+          .textTheme
+          .titleMedium
+          ?.copyWith(fontWeight: FontWeight.bold),
     );
   }
 }
