@@ -306,6 +306,8 @@ class _Body extends StatelessWidget {
             const SizedBox(height: 16),
             ..._buildCategorySections(columns, emojiSize),
             const SizedBox(height: 16),
+            _PageWrapper(child: _InteractiveDemo()),
+            const SizedBox(height: 16),
             _PageWrapper(child: _SampleTexts()),
             const SizedBox(height: 16),
             _PageWrapper(child: _UsageApi()),
@@ -583,6 +585,100 @@ const _categories = <(String, String)>[
       '\u{1F1F7}\u{1F1FA}\u{1F1F8}\u{1F1EC}\u{1F1F7}\u{1F1FA}\u{1F1F8}'
       '\u{1F3F4}\u{1F3F3}\u{FE0F}\u{1F3F4}\u{200D}\u{2620}\u{FE0F}'),
 ];
+
+// ─── INTERACTIVE DEMO ────────────────────────────────────────────────────────
+
+class _InteractiveDemo extends StatefulWidget {
+  @override
+  State<_InteractiveDemo> createState() => _InteractiveDemoState();
+}
+
+class _InteractiveDemoState extends State<_InteractiveDemo> {
+  final TextEditingController _ctrl = TextEditingController();
+  String _preview = '';
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _SectionTitle('Try it yourself'),
+            const SizedBox(height: 4),
+            Text(
+              'Type any text with emoji \u{1F447}',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: cs.onSurfaceVariant),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _ctrl,
+              maxLines: 3,
+              minLines: 1,
+              decoration: InputDecoration(
+                hintText: 'e.g. Hello \u{1F30D}! How are you? \u{1F60A}',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: cs.surfaceContainerHighest,
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.send_rounded),
+                  tooltip: 'Show preview',
+                  onPressed: () =>
+                      setState(() => _preview = _ctrl.text),
+                ),
+              ),
+              onChanged: (v) => setState(() => _preview = v),
+            ),
+            if (_preview.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Preview',
+                      style: Theme.of(context)
+                          .textTheme
+                          .labelMedium
+                          ?.copyWith(color: cs.onPrimaryContainer),
+                    ),
+                    const SizedBox(height: 8),
+                    EmojiText(
+                      _preview,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            fontSize: 20,
+                            color: cs.onPrimaryContainer,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 // ─── SAMPLE TEXTS ────────────────────────────────────────────────────────────
 
