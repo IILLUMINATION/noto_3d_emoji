@@ -626,8 +626,18 @@ class _InteractiveDemoState extends State<_InteractiveDemo> {
               controller: _ctrl,
               maxLines: 3,
               minLines: 1,
+              style: NotoEmoji.isInitialized
+                  ? TextStyle(
+                      fontFamilyFallback: [NotoEmoji.fontFamily!],
+                    )
+                  : null,
               decoration: InputDecoration(
                 hintText: 'e.g. Hello \u{1F30D}! How are you? \u{1F60A}',
+                hintStyle: NotoEmoji.isInitialized
+                    ? TextStyle(
+                        fontFamilyFallback: [NotoEmoji.fontFamily!],
+                      )
+                    : null,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
