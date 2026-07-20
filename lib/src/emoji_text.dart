@@ -86,7 +86,13 @@ List<TextSpan> _buildSpans(String text, TextStyle style, TextStyle? emojiStyle) 
   return spans;
 }
 
+/// A [Text] replacement that applies the Noto Emoji font to emoji glyphs.
+///
+/// Regular (non-emoji) text uses the default [style]. Emoji codepoints are
+/// rendered with the font loaded by [NotoEmoji.initialize].
+/// Accepts the same parameters as Flutter's [Text] widget.
 class EmojiText extends StatelessWidget {
+  /// Creates a widget that displays [data] with automatic emoji font.
   const EmojiText(
     this.data, {
     super.key,
@@ -105,19 +111,46 @@ class EmojiText extends StatelessWidget {
     this.selectionColor,
   });
 
+  /// The text to display. Emoji within this string use the Noto font.
   final String data;
+
+  /// {@macro flutter.widgets.Text.style}
   final TextStyle? style;
+
+  /// {@macro flutter.widgets.Text.strutStyle}
   final StrutStyle? strutStyle;
+
+  /// {@macro flutter.widgets.Text.textAlign}
   final TextAlign? textAlign;
+
+  /// {@macro flutter.widgets.Text.textDirection}
   final TextDirection? textDirection;
+
+  /// {@macro flutter.widgets.Text.locale}
   final Locale? locale;
+
+  /// {@macro flutter.widgets.Text.softWrap}
   final bool? softWrap;
+
+  /// {@macro flutter.widgets.Text.overflow}
   final TextOverflow? overflow;
+
+  /// {@macro flutter.widgets.Text.textScaleFactor}
   final double? textScaleFactor;
+
+  /// {@macro flutter.widgets.Text.maxLines}
   final int? maxLines;
+
+  /// {@macro flutter.widgets.Text.semanticsLabel}
   final String? semanticsLabel;
+
+  /// {@macro flutter.widgets.Text.textWidthBasis}
   final TextWidthBasis? textWidthBasis;
+
+  /// {@macro flutter.widgets.Text.textHeightBehavior}
   final TextHeightBehavior? textHeightBehavior;
+
+  /// {@macro flutter.widgets.Text.selectionColor}
   final Color? selectionColor;
 
   @override
@@ -187,7 +220,10 @@ class EmojiText extends StatelessWidget {
   }
 }
 
+/// A [Text.rich] replacement that applies the Noto Emoji font inside a
+/// [TextSpan] tree. Same API as Flutter's [Text.rich].
 class EmojiTextRich extends StatelessWidget {
+  /// Creates a rich-text widget with automatic emoji font resolution.
   const EmojiTextRich(
     this.textSpan, {
     super.key,
@@ -206,19 +242,46 @@ class EmojiTextRich extends StatelessWidget {
     this.selectionColor,
   });
 
+  /// The root [TextSpan] to display. Descendant emoji use the Noto font.
   final TextSpan textSpan;
+
+  /// {@macro flutter.widgets.Text.style}
   final TextStyle? style;
+
+  /// {@macro flutter.widgets.Text.strutStyle}
   final StrutStyle? strutStyle;
+
+  /// {@macro flutter.widgets.Text.textAlign}
   final TextAlign? textAlign;
+
+  /// {@macro flutter.widgets.Text.textDirection}
   final TextDirection? textDirection;
+
+  /// {@macro flutter.widgets.Text.locale}
   final Locale? locale;
+
+  /// {@macro flutter.widgets.Text.softWrap}
   final bool? softWrap;
+
+  /// {@macro flutter.widgets.Text.overflow}
   final TextOverflow? overflow;
+
+  /// {@macro flutter.widgets.Text.textScaleFactor}
   final double? textScaleFactor;
+
+  /// {@macro flutter.widgets.Text.maxLines}
   final int? maxLines;
+
+  /// {@macro flutter.widgets.Text.semanticsLabel}
   final String? semanticsLabel;
+
+  /// {@macro flutter.widgets.Text.textWidthBasis}
   final TextWidthBasis? textWidthBasis;
+
+  /// {@macro flutter.widgets.Text.textHeightBehavior}
   final TextHeightBehavior? textHeightBehavior;
+
+  /// {@macro flutter.widgets.Text.selectionColor}
   final Color? selectionColor;
 
   @override

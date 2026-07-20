@@ -72,3 +72,11 @@ A drop-in replacement for `Text.rich` with emoji font fallback.
 
 Code: MIT  
 Font: SIL Open Font License 1.1 (Google Noto Emoji)
+
+## Screenshots
+
+![Emoji faces](смайлы лиц пример.png)
+![Emoji grid by category](пример из разных категорий табличкой.png)
+![General emoji overview](общий пример эмодзи.png)
+![Usage in UI](пример использования в ui.png)
+![Emoji in text field](пример в текстовом поле.png)

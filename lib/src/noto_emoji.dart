@@ -4,6 +4,11 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
+/// Manages downloading, caching, and loading the Noto Color Emoji font.
+///
+/// Call [initialize] once before using [EmojiText] or [EmojiTextRich].
+/// The font is downloaded once from [url] and cached locally.
+/// Subsequent calls reuse the cached copy unless [clearCache] is called.
 class NotoEmoji {
   NotoEmoji._();
 
@@ -13,9 +18,18 @@ class NotoEmoji {
   static const _defaultFontFamily = 'NotoEmoji3D';
   static const _cacheVersion = 2;
 
+  /// Whether the font has been loaded and registered with Flutter.
   static bool get isInitialized => _initialized;
+
+  /// The font family name used to register the loaded font.
   static String? get fontFamily => _fontFamily;
 
+  /// Downloads (if needed) and registers the Noto Color Emoji font.
+  ///
+  /// [url] — direct HTTPS URL to the `.ttf` file (required).
+  /// [fontFamily] — custom font family name (default `NotoEmoji3D`).
+  /// [onProgress] — called during download with `(received, total)` bytes.
+  /// [cacheDirProvider] — override the default app-documents cache directory.
   static Future<void> initialize({
     required String url,
     String fontFamily = _defaultFontFamily,
@@ -30,8 +44,7 @@ class NotoEmoji {
     final File file = File('$dir/$fontFamily.ttf');
     final File versionFile = File('$dir/$fontFamily.version');
 
-    final bool needsDownload = !await file.exists() ||
-        await _cacheVersionMismatch(versionFile);
+    final bool needsDownload = !await file.exists() || await _cacheVersionMismatch(versionFile);
 
     if (needsDownload) {
       await _downloadFile(url, file, onProgress: onProgress);
@@ -102,6 +115,10 @@ class NotoEmoji {
     }
   }
 
+  /// Deletes the cached font file and resets initialization state.
+  ///
+  /// The next call to [initialize] will re-download the font.
+  /// [fontFamily] must match the value passed to [initialize].
   static Future<void> clearCache({
     String fontFamily = _defaultFontFamily,
   }) async {
