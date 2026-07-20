@@ -75,8 +75,8 @@ Font: SIL Open Font License 1.1 (Google Noto Emoji)
 
 ## Screenshots
 
-![Emoji faces](смайлы лиц пример.png)
-![Emoji grid by category](пример из разных категорий табличкой.png)
-![General emoji overview](общий пример эмодзи.png)
-![Usage in UI](пример использования в ui.png)
-![Emoji in text field](пример в текстовом поле.png)
+![Emoji faces](smiley-faces.png)
+![Emoji grid by category](emoji-categories-grid.png)
+![General emoji overview](emoji-overview.png)
+![Usage in UI](emoji-in-ui.png)
+![Emoji in text field](emoji-in-text-field.png)
