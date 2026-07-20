@@ -31,62 +31,70 @@ bool _isEmojiRune(int codePoint) {
   return false;
 }
 
-List<TextSpan> _buildSpans(String text, TextStyle style, TextStyle? emojiStyle) {
+List<TextSpan> _buildSpans(String text, TextStyle style, TextStyle baseEmojiStyle) {
   if (text.isEmpty) return [];
 
   final List<TextSpan> spans = [];
-  final StringBuffer buf = StringBuffer();
-  final int len = text.length;
+  final StringBuffer nonEmojiBuf = StringBuffer();
 
-  void flush() {
-    if (buf.isNotEmpty) {
-      spans.add(TextSpan(text: buf.toString(), style: style));
-      buf.clear();
+  void flushNonEmoji() {
+    if (nonEmojiBuf.isNotEmpty) {
+      spans.add(TextSpan(text: nonEmojiBuf.toString(), style: style));
+      nonEmojiBuf.clear();
     }
   }
 
-  int i = 0;
-  while (i < len) {
-    final int codePoint = text.codeUnitAt(i);
-    final bool isHighSurrogate = codePoint >= 0xD800 && codePoint <= 0xDBFF;
-
-    if (isHighSurrogate && i + 1 < len) {
-      final int low = text.codeUnitAt(i + 1);
-      if (low >= 0xDC00 && low <= 0xDFFF) {
-        final int rune = 0x10000 + (codePoint - 0xD800) * 0x400 + (low - 0xDC00);
-        if (_isEmojiRune(rune)) {
-          flush();
-          spans.add(TextSpan(
-            text: String.fromCharCodes([codePoint, low]),
-            style: emojiStyle,
-          ));
-          i += 2;
-          continue;
-        }
-        buf.writeCharCode(codePoint);
-        buf.writeCharCode(low);
-        i += 2;
-        continue;
+  for (final String cluster in text.characters) {
+    int? firstEmojiRune;
+    for (final int rune in cluster.runes) {
+      if (_isEmojiRune(rune)) {
+        firstEmojiRune = rune;
+        break;
       }
     }
 
-    if (_isEmojiRune(codePoint)) {
-      flush();
+    if (firstEmojiRune != null) {
+      flushNonEmoji();
+      final family = NotoEmoji.getFontFamilyForRune(firstEmojiRune);
       spans.add(TextSpan(
-        text: String.fromCharCode(codePoint),
-        style: emojiStyle,
+        text: cluster,
+        style: family.isNotEmpty
+            ? baseEmojiStyle.copyWith(fontFamily: family)
+            : baseEmojiStyle,
       ));
     } else {
-      buf.writeCharCode(codePoint);
+      nonEmojiBuf.write(cluster);
     }
-    i++;
   }
 
-  flush();
+  flushNonEmoji();
   return spans;
 }
 
-class EmojiText extends StatelessWidget {
+class _EmojiTextState extends State<EmojiText> {
+  @override
+  void initState() {
+    super.initState();
+    NotoEmoji.loadedCategories.addListener(_onCategoriesChanged);
+  }
+
+  @override
+  void dispose() {
+    NotoEmoji.loadedCategories.removeListener(_onCategoriesChanged);
+    super.dispose();
+  }
+
+  void _onCategoriesChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget._build(context);
+  }
+}
+
+class EmojiText extends StatefulWidget {
   const EmojiText(
     this.data, {
     super.key,
@@ -121,7 +129,9 @@ class EmojiText extends StatelessWidget {
   final Color? selectionColor;
 
   @override
-  Widget build(BuildContext context) {
+  State<EmojiText> createState() => _EmojiTextState();
+
+  Widget _build(BuildContext context) {
     final TextStyle base = DefaultTextStyle.of(context).style;
     final TextStyle merged = base.merge(style);
 
@@ -144,11 +154,7 @@ class EmojiText extends StatelessWidget {
       );
     }
 
-    final TextStyle emojiStyle = merged.copyWith(
-      fontFamily: NotoEmoji.fontFamily,
-    );
-
-    final List<TextSpan> spans = _buildSpans(data, merged, emojiStyle);
+    final List<TextSpan> spans = _buildSpans(data, merged, merged);
 
     if (spans.length == 1 && spans.first.style == merged) {
       return Text(
@@ -187,7 +193,7 @@ class EmojiText extends StatelessWidget {
   }
 }
 
-class EmojiTextRich extends StatelessWidget {
+class EmojiTextRich extends StatefulWidget {
   const EmojiTextRich(
     this.textSpan, {
     super.key,
@@ -222,7 +228,9 @@ class EmojiTextRich extends StatelessWidget {
   final Color? selectionColor;
 
   @override
-  Widget build(BuildContext context) {
+  State<EmojiTextRich> createState() => _EmojiTextRichState();
+
+  Widget _build(BuildContext context) {
     final TextStyle base = DefaultTextStyle.of(context).style;
     final TextStyle merged = base.merge(style);
 
@@ -245,12 +253,8 @@ class EmojiTextRich extends StatelessWidget {
       );
     }
 
-    final TextStyle emojiStyle = merged.copyWith(
-      fontFamily: NotoEmoji.fontFamily,
-    );
-
     return Text.rich(
-      _applyEmojiToSpan(textSpan, merged, emojiStyle),
+      _applyEmojiToSpan(textSpan, merged, merged),
       style: merged,
       strutStyle: strutStyle,
       textAlign: textAlign,
@@ -301,5 +305,28 @@ class EmojiTextRich extends StatelessWidget {
       style: span.style,
       children: segmented,
     );
+  }
+}
+
+class _EmojiTextRichState extends State<EmojiTextRich> {
+  @override
+  void initState() {
+    super.initState();
+    NotoEmoji.loadedCategories.addListener(_onCategoriesChanged);
+  }
+
+  @override
+  void dispose() {
+    NotoEmoji.loadedCategories.removeListener(_onCategoriesChanged);
+    super.dispose();
+  }
+
+  void _onCategoriesChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget._build(context);
   }
 }

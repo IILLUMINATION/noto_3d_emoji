@@ -1,6 +1,6 @@
 name: noto_3d_emoji
 description: Google Noto 3D Emoji for Flutter. Downloads and caches the latest Noto Color Emoji font from a custom server.
-version: 1.0.0
+version: 2.0.0
 homepage: https://github.com/your-username/noto_3d_emoji
 
 environment:
