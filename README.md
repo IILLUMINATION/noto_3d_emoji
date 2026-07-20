@@ -5,6 +5,8 @@ Google Noto 3D Color Emoji for Flutter.
 Downloads and caches the latest Noto Color Emoji font from your own server,
 then renders emoji in your app with the 3D look.
 
+![General emoji overview](emoji-overview.png)
+
 ## Usage
 
 ```dart
@@ -30,12 +32,16 @@ Then use `EmojiText` anywhere:
 EmojiText('Hello 🌍! This 🔥 is amazing 🎉')
 ```
 
+![Emoji faces](smiley-faces.png)
+
 ## How it works
 
 1. The TTF file is downloaded once from your server and cached locally.
 2. `NotoEmoji.initialize()` registers the font with Flutter's font system.
 3. `EmojiText` uses `fontFamilyFallback` so only emoji glyphs use the 3D font,
    while regular text keeps your app's default look.
+
+![Emoji grid by category](emoji-categories-grid.png)
 
 ## API
 
@@ -55,8 +61,12 @@ Deletes the cached font file. Next `initialize()` call will re-download.
 ### `EmojiText`
 A drop-in replacement for `Text` with emoji font fallback.
 
+![Usage in UI](emoji-in-ui.png)
+
 ### `EmojiTextRich`
 A drop-in replacement for `Text.rich` with emoji font fallback.
+
+![Emoji in text field](emoji-in-text-field.png)
 
 ## Platform support
 
@@ -72,11 +82,3 @@ A drop-in replacement for `Text.rich` with emoji font fallback.
 
 Code: MIT  
 Font: SIL Open Font License 1.1 (Google Noto Emoji)
-
-## Screenshots
-
-![Emoji faces](smiley-faces.png)
-![Emoji grid by category](emoji-categories-grid.png)
-![General emoji overview](emoji-overview.png)
-![Usage in UI](emoji-in-ui.png)
-![Emoji in text field](emoji-in-text-field.png)
